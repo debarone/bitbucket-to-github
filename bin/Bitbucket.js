@@ -17,14 +17,17 @@ class Bitbucket {
 
     // page counter for api requests
     let currentPage = 1;
+    let url = "https://api.bitbucket.org/2.0/repositories/" +
+    process.env.BITBUCKET_ACCOUNT_ID + "/?q=" +
+    "project.key=%22" + process.env.BITBUCKET_PROJECT + "%22" +
+    "+AND+slug~%22" + process.env.BITBUCKET_SLUG + "%22";
+
+    console.log("URL: " + url);
 
     do {
       // make a request to the Bitbucket API
       response = await request(
-        "https://api.bitbucket.org/2.0/repositories/" +
-          process.env.BITBUCKET_ACCOUNT_ID +
-          "?page=" +
-          currentPage,
+        url,
         {
           auth: {
             // fill in Bitbucket credentials in .env file
@@ -61,7 +64,7 @@ class Bitbucket {
 
       // we don't want to try to push to repos that errored out
       if (success) {
-        console.log("pulled repository for", repositories[i].slug);
+        console.log("\t... pulled repository for", repositories[i].slug);
         successfulRepos.push(repositories[i]);
       }
     }
@@ -84,18 +87,23 @@ class Bitbucket {
 
     // initialize a folder and git repo on this machine
     // add Bitbucket as a remote and pull
-    let commands = `mkdir ${pathToRepo}  \
-                && cd ${pathToRepo} \
-                && git init \
-                && git remote add origin ${repository.links.clone[0].href} \
-                && git pull origin master`;
+    let repo_href = repository.links.clone[0].href.replace(
+      /\w+(?=\@)/, `${process.env.BITBUCKET_USERNAME}:${process.env.BITBUCKET_PASSWORD}`
+    );
+
+    let commands = `if [ -d ${pathToRepo} ]; then rm -rf ${pathToRepo}; fi \
+      && mkdir ${pathToRepo} \
+      && cd ${pathToRepo} \
+      && git init \
+      && git remote add origin ${repo_href} \
+      && git pull origin master`;
     try {
       // initialize repo
       await exec(commands);
 
       return true;
     } catch (e) {
-      console.log("couldn't pull repository", repository.slug);
+      console.log("\t..! couldn't pull repository: ", repository.slug + " - " + e);
     }
 
     return false;

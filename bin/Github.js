@@ -12,46 +12,45 @@ class Github {
    */
   static async createRepositories(repositories) {
     // keep track of which repos have failed to be created on Github
-    const successfulRepos = [];
+    const createdRepos = [];
 
-    for (let i = 0; i < repositories.length; i++) {
-      // create the repository
-      let success = await Github.createRepository(repositories[i]);
+    for(let i = 0; i < repositories.length; i++) {
+      let success = this.createRepository(repositories[i]);
 
-      // we don't want to try to clone to existing repos later
       if (success) {
-        console.log("created repository for", repositories[i].slug);
-        successfulRepos.push(repositories[i]);
+        createdRepos.push(repositories[i]);
       }
     }
 
-    return successfulRepos;
+    return createdRepos;
   }
 
   /**
-   * Create a new repository on Github.
+   * Check whether repository exists on Github.
    *
    * @param {Object} repository single Bitbucket repo resource
-   * @returns {Bolean} success status
+   * @returns {String} success status
    */
-  static async createRepository(repository) {
+  static async checkRepository(repository) {
     try {
-      // make the request for a new repo
-      await request.post({
+      // check the users repos
+      let json_repos = await request.get({
         url: "https://api.github.com/user/repos",
-        body: {
-          name: repository.slug,
-          description: repository.description,
-          private: repository.is_private,
-          has_issues: repository.has_issues,
-          has_wiki: repository.has_wiki
-        },
         headers: {
-          "User-Agent": "UA is required",
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
+            "User-Agent": "Transfer CI",
+            Authorization: `token ${process.env.GITHUB_TOKEN}`
         },
         json: true
       });
+
+      var res = "no_exists"
+      json_repos.forEach(r => {
+        if (repository.slug == r.name) {
+          res = "exists";
+        }
+      });
+
+      return res;
     } catch (e) {
       // something went wrong, log the message
       // but don't kill the script
@@ -59,11 +58,57 @@ class Github {
 
       for (let i = 0; i < errors.length; i++) {
         console.log(
-          "Failed creating repository",
-          repository.slug + ",",
-          errors[i].message + "."
+            "Failed checking repository",
+            repository.slug + ",",
+            errors[i].message + "."
         );
       }
+
+      return "exception";
+    }
+
+    return true;
+  }
+
+  /**
+   * Create a new repository on Github.
+   *
+   * @param {Object} repository single Bitbucket repo resource
+   * @returns {Boolean} success status
+   */
+  static async createRepository(repository) {
+    try {
+      let check_exists = await this.checkRepository(repository);
+
+      if (check_exists == "no_exists") {
+        await request.post({
+          url: "https://api.github.com/user/repos",
+          body: {
+            name: repository.slug,
+            description: repository.description,
+            private: repository.is_private,
+            has_issues: repository.has_issues,
+            has_wiki: repository.has_wiki
+          },
+          headers: {
+            "User-Agent": "Transfer CI",
+            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
+          },
+          json: true
+        })
+      } else if (check_exists == "exception") {
+        throw new Error('\t ..! check repo failed for ' + repository.slug);
+      }
+
+      return true
+    } catch (e) {
+      // something went wrong, log the message
+      // but don't kill the script
+      console.log(
+        "Failed creating repository ", 
+        repository.slug + ", " + e
+      );
+
       return false;
     }
 
@@ -80,7 +125,7 @@ class Github {
 
       // keep track of which repos were pushed for reporting
       if (success) {
-        console.log("pushed repository for", repositories[i].slug);
+        console.log("\t... pushed repository for", repositories[i].slug);
         successfulRepos.push(repositories[i]);
       }
     }
@@ -107,13 +152,15 @@ class Github {
     // initialize a folder and git repo on this machine
     // add Bitbucket as a remote and pull
     let commands = ` cd ${pathToRepo} \
-                && git init \
-                && git remote set-url origin https://${
-                  process.env.GITHUB_USERNAME
-                }:${process.env.GITHUB_TOKEN}@github.com/${
-      process.env.GITHUB_USERNAME
-    }/${repository.slug}.git \
-                && git push origin master`;
+      && git init \
+      && git remote set-url origin https://${
+        process.env.GITHUB_USERNAME
+      }:${process.env.GITHUB_TOKEN}@github.com/${
+        process.env.GITHUB_USERNAME
+      }/${
+        repository.slug
+      }.git \
+      && git push origin master`;
     try {
       // initialize repo
       await exec(commands);
@@ -121,7 +168,7 @@ class Github {
       return true;
     } catch (e) {
       console.log(e);
-      console.log("couldn't push repository", repository.slug);
+      console.log("\t..! couldn't push repository", repository.slug);
     }
 
     return false;

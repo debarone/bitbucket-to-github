@@ -10,12 +10,20 @@ dotenv.config();
   const repositories = await Bitbucket.getRepositories();
 
   // create a new repository on Github for the repos
-  const successfulCreates = await Github.createRepositories(repositories);
+  const succesfulCreates = await Github.createRepositories(repositories);
 
   // clone into a local folder
-  const successfulClones = await Bitbucket.pullRepositories(successfulCreates);
+  const successfulClones = await Bitbucket.pullRepositories(succesfulCreates);
 
-  // push to Github
+  // successfulNewClones.forEach(r => {
+  //   allPushes.push(r)
+  // });
+
+  // successfulExistingClones.forEach(r => {
+  //   allPushes.push(r)
+  // });
+
+  // // push to Github
   const succesfulPushes = await Github.pushRepositories(successfulClones);
 
   console.log(
