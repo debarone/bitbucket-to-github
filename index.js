@@ -3,7 +3,9 @@ const Github = require("./bin/Github");
 const dotenv = require("dotenv");
 
 // load in our environment variables
-dotenv.config();
+dotenv.config({
+  path: '/run/secrets/repo.credentials.env'
+});
 
 (async () => {
   // get all the bitbucket repositories we're going to transfer
@@ -14,14 +16,6 @@ dotenv.config();
 
   // clone into a local folder
   const successfulClones = await Bitbucket.pullRepositories(succesfulCreates);
-
-  // successfulNewClones.forEach(r => {
-  //   allPushes.push(r)
-  // });
-
-  // successfulExistingClones.forEach(r => {
-  //   allPushes.push(r)
-  // });
 
   // // push to Github
   const succesfulPushes = await Github.pushRepositories(successfulClones);

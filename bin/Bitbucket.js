@@ -20,7 +20,7 @@ class Bitbucket {
     let url = "https://api.bitbucket.org/2.0/repositories/" +
     process.env.BITBUCKET_ACCOUNT_ID + "/?q=" +
     "project.key=%22" + process.env.BITBUCKET_PROJECT + "%22" +
-    "+AND+slug~%22" + process.env.BITBUCKET_SLUG + "%22";
+    "+AND+slug~%22" + process.env.REPOSITORY + "%22";
 
     console.log("URL: " + url);
 
