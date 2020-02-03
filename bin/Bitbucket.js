@@ -88,7 +88,7 @@ class Bitbucket {
     // initialize a folder and git repo on this machine
     // add Bitbucket as a remote and pull
     let repo_href = repository.links.clone[0].href.replace(
-      /\w+(?=\@)/, `${process.env.BITBUCKET_USERNAME}:${process.env.BITBUCKET_PASSWORD}`
+      /\w+(?=\@)/, `${process.env.BITBUCKET_COMMON_CREDS_USR}:${process.env.BITBUCKET_COMMON_CREDS_PSW}`
     );
 
     let commands = `if [ -d ${pathToRepo} ]; then rm -rf ${pathToRepo}; fi \

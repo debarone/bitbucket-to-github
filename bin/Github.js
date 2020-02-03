@@ -38,7 +38,7 @@ class Github {
         url: "https://api.github.com/user/repos",
         headers: {
             "User-Agent": "Transfer CI",
-            Authorization: `token ${process.env.GITHUB_TOKEN}`
+            Authorization: `token ${process.env.GITHUB_COMMON_CREDS_PSW}`
         },
         json: true
       });
@@ -92,7 +92,7 @@ class Github {
           },
           headers: {
             "User-Agent": "Transfer CI",
-            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
+            Authorization: `Bearer ${process.env.GITHUB_COMMON_CREDS_PSW}`
           },
           json: true
         })
@@ -154,9 +154,9 @@ class Github {
     let commands = ` cd ${pathToRepo} \
       && git init \
       && git remote set-url origin https://${
-        process.env.GITHUB_USERNAME
-      }:${process.env.GITHUB_TOKEN}@github.com/${
-        process.env.GITHUB_USERNAME
+        process.env.GITHUB_COMMON_CREDS_USR
+      }:${process.env.GITHUB_COMMON_CREDS_PSW}@github.com/${
+        process.env.GITHUB_COMMON_CREDS_USR
       }/${
         repository.slug
       }.git \
